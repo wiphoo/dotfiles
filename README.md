@@ -44,7 +44,7 @@ Leader is `Ctrl+Space` (2s timeout). Theme: Solarized Dark, 13pt, 10k scrollback
 ## Notes
 
 - `git/.gitconfig` contains my name and email; change them if you reuse it.
-- `bash/.bash_profile` hardcodes a Java 9 path and the Android SDK location, so adjust for your machine.
+- `bash/.bash_profile` assumes the Android SDK at `~/Android/Sdk` and Java via `/usr/lib/jvm/default-java`; adjust for your machine.
 
 ## License
 
