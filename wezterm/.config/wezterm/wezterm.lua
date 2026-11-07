@@ -191,12 +191,18 @@ return {
     {
       key = "W",
       mods = "LEADER|SHIFT",
-      action = resurrect.window_state.save_window_action(),
+      -- upstream save_window_action calls a non-exported resurrect.save_state; use state_manager directly
+      action = wezterm.action_callback(function(win)
+        resurrect.state_manager.save_state(resurrect.window_state.get_window_state(win:mux_window()))
+      end),
     },
     {
       key = "T",
       mods = "LEADER|SHIFT",
-      action = resurrect.tab_state.save_tab_action(),
+      -- same upstream bug in save_tab_action's untitled branch; call state_manager directly
+      action = wezterm.action_callback(function(_, pane)
+        resurrect.state_manager.save_state(resurrect.tab_state.get_tab_state(pane:tab()))
+      end),
     },
     {
       key = "o",
@@ -209,7 +215,6 @@ return {
           local opts = {
             relative = true,
             restore_text = false, -- scrollback may hold secrets and state is unencrypted
-            on_pane_restore = resurrect.tab_state.default_on_pane_restore,
           }
           if kind == "workspace" then
             resurrect.workspace_state.restore_workspace(resurrect.state_manager.load_state(id, "workspace"), opts)
