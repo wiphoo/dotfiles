@@ -252,6 +252,8 @@ return {
           elseif kind == "window" then
             resurrect.window_state.restore_window(pane:window(), resurrect.state_manager.load_state(id, "window"), opts)
           elseif kind == "tab" then
+            -- restore_tab splits the active pane; close the old ones so the layout is exact
+            opts.close_open_panes = true
             resurrect.tab_state.restore_tab(pane:tab(), resurrect.state_manager.load_state(id, "tab"), opts)
           end
         end)
