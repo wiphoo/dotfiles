@@ -1,6 +1,11 @@
 local wezterm = require("wezterm")
 local act = wezterm.action
 
+-- Session save/restore across reboots (upstream is archived; fetched once into
+-- ~/.local/share/wezterm/plugins). Restores layout + cwd, not running processes.
+local resurrect = wezterm.plugin.require("https://github.com/MLFlexer/resurrect.wezterm")
+resurrect.state_manager.periodic_save()
+
 wezterm.on("update-right-status", function(window, pane)
   if window:leader_is_active() then
     window:set_right_status(" LEADER ")
@@ -26,6 +31,10 @@ return {
 
   -- Auto reload config
   automatically_reload_config = true,
+
+  -- Keep tabs/panes alive when the window closes (lost on reboot; see resurrect)
+  unix_domains = { { name = "unix" } },
+  default_gui_startup_args = { "connect", "unix" },
 
   -- Leader key: Ctrl+Space, then another key
   leader = {
@@ -167,6 +176,50 @@ return {
       key = "f",
       mods = "CTRL|SHIFT",
       action = act.Search("CurrentSelectionOrEmptyString"),
+    },
+
+    ----------------------------------------------------------------------
+    -- Sessions (resurrect.wezterm): save / load
+    ----------------------------------------------------------------------
+    {
+      key = "s",
+      mods = "LEADER",
+      action = wezterm.action_callback(function()
+        resurrect.state_manager.save_state(resurrect.workspace_state.get_workspace_state())
+      end),
+    },
+    {
+      key = "W",
+      mods = "LEADER|SHIFT",
+      action = resurrect.window_state.save_window_action(),
+    },
+    {
+      key = "T",
+      mods = "LEADER|SHIFT",
+      action = resurrect.tab_state.save_tab_action(),
+    },
+    {
+      key = "o",
+      mods = "LEADER",
+      action = wezterm.action_callback(function(win, pane)
+        resurrect.fuzzy_loader.fuzzy_load(win, pane, function(id)
+          local kind = string.match(id, "^([^/]+)")
+          id = string.match(id, "([^/]+)$")
+          id = string.match(id, "(.+)%..+$")
+          local opts = {
+            relative = true,
+            restore_text = false, -- scrollback may hold secrets and state is unencrypted
+            on_pane_restore = resurrect.tab_state.default_on_pane_restore,
+          }
+          if kind == "workspace" then
+            resurrect.workspace_state.restore_workspace(resurrect.state_manager.load_state(id, "workspace"), opts)
+          elseif kind == "window" then
+            resurrect.window_state.restore_window(pane:window(), resurrect.state_manager.load_state(id, "window"), opts)
+          elseif kind == "tab" then
+            resurrect.tab_state.restore_tab(pane:tab(), resurrect.state_manager.load_state(id, "tab"), opts)
+          end
+        end)
+      end),
     },
   },
 }
