@@ -40,6 +40,16 @@ Leader is `Ctrl+Space` (2s timeout). Theme: Solarized Dark, 13pt, 10k scrollback
 | `Leader` `z`                 | Zoom pane                    |
 | `Leader` `r`                 | Reload config                |
 | `Ctrl+Shift+F`               | Search                       |
+| `Leader` `s`                 | Save workspace session       |
+| `Leader` `Shift+W` / `Shift+T` | Save window / tab          |
+| `Leader` `o`                 | Load a saved session (picker) |
+
+### Sessions
+
+- **Window close:** a unix domain (`default_gui_startup_args = connect unix`) keeps tabs and panes alive after the window closes, while the machine stays up.
+- **Reboot:** [resurrect.wezterm](https://github.com/MLFlexer/resurrect.wezterm) saves layout and working directories every 15 minutes (and on `Leader s`). Load with `Leader o`. Running processes are not restored, and scrollback is not restored (state files are unencrypted).
+- The plugin's upstream is archived. It is fetched on first launch into `~/.local/share/wezterm/plugins`, so the first start needs network access.
+- Not auto-restored at startup: the `gui-startup` hook is not wired, because starting through `connect unix` may skip it (unverified).
 
 ## Notes
 
