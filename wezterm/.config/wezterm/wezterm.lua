@@ -14,6 +14,27 @@ wezterm.on("update-right-status", function(window, pane)
   end
 end)
 
+-- Save a window/tab snapshot; an empty title would write ".json" (invisible to the
+-- fuzzy loader, overwritten by the next one), so prompt for a name first.
+local function save_named(win, pane, what, title, set_title, get_state)
+  if title ~= nil and title ~= "" then
+    resurrect.state_manager.save_state(get_state())
+    return
+  end
+  win:perform_action(
+    wezterm.action.PromptInputLine({
+      description = "Enter new " .. what .. " title",
+      action = wezterm.action_callback(function(_, _, input)
+        if input and input ~= "" then
+          set_title(input)
+          resurrect.state_manager.save_state(get_state())
+        end
+      end),
+    }),
+    pane
+  )
+end
+
 return {
   -- Appearance
   font_size = 13.0,
@@ -192,16 +213,26 @@ return {
       key = "W",
       mods = "LEADER|SHIFT",
       -- upstream save_window_action calls a non-exported resurrect.save_state; use state_manager directly
-      action = wezterm.action_callback(function(win)
-        resurrect.state_manager.save_state(resurrect.window_state.get_window_state(win:mux_window()))
+      action = wezterm.action_callback(function(win, pane)
+        local mux_win = win:mux_window()
+        save_named(win, pane, "window", mux_win:get_title(), function(t)
+          mux_win:set_title(t)
+        end, function()
+          return resurrect.window_state.get_window_state(mux_win)
+        end)
       end),
     },
     {
       key = "T",
       mods = "LEADER|SHIFT",
-      -- same upstream bug in save_tab_action's untitled branch; call state_manager directly
-      action = wezterm.action_callback(function(_, pane)
-        resurrect.state_manager.save_state(resurrect.tab_state.get_tab_state(pane:tab()))
+      -- same upstream bug in save_tab_action's untitled branch
+      action = wezterm.action_callback(function(win, pane)
+        local tab = pane:tab()
+        save_named(win, pane, "tab", tab:get_title(), function(t)
+          tab:set_title(t)
+        end, function()
+          return resurrect.tab_state.get_tab_state(tab)
+        end)
       end),
     },
     {
